@@ -1,0 +1,64 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Spring Boot Thymeleaf + Spring Security</title>
+
+    <div th:replace="fragments/header :: header-css"/>
+
+</head>
+<body>
+
+<div th:replace="fragments/header :: header"/>
+
+<div class="container">
+
+
+    <div class="container">
+
+        <!--Show this info message only if linked successfully-->
+        <!--<div class="alert alert-info" th:if="${successMessage}" th:utext="${successMessage}"></div>-->
+
+        <!--New Link Form-->
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3">
+                <form autocomplete="off" action="#" th:action="@{/newLink}"
+                      th:object="${linkDTO}" method="post" class="form-horizontal"
+                      role="form">
+                    <h2>Write new link</h2>
+
+                    <div class="form-group">
+                        <div class="col-sm-9">
+                            <label th:if="${#fields.hasErrors('url')}" th:errors="*{url}"
+                                   class="alert alert-danger"></label>
+                            <input type="text" th:field="*{url}" placeholder="Url"
+                                   class="form-control"/>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="col-sm-9">
+                            <label th:if="${#fields.hasErrors('tags')}" th:errors="*{tags}"
+                                   class="alert alert-danger"></label>
+                            <textarea th:field="*{tags}"
+                                      placeholder="Enter some tags separated by spaces" class="form-control"/>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="col-sm-9">
+                            <button type="submit" class="btn btn-primary btn-block">Save</button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<div th:replace="fragments/footer :: footer"/>
+
+</body>
+</html>

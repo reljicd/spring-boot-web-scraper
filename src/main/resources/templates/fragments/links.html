@@ -1,0 +1,46 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+</head>
+<body>
+<div th:fragment="links">
+
+    <div class="starter-template panel" th:each="link : ${links}">
+        <div class="panel-heading">
+            <h1><a th:text="${link.url}" th:href="@{${link.url}}">Title</a></h1>
+            <!--<div th:text="'Created: ' + ${link.createDate} + ' by ' + ${link.user.username}">Created by User</div>-->
+            <div th:text="'Created: ' + ${#dates.format(link.createDate, 'dd-MMM-yyyy')} + ' by '">
+                Created by
+            </div>
+            <div><a th:text="${link.user.username}" th:href="@{'/links/' + ${link.user.username}}">User</a>
+            </div>
+        </div>
+        <h3>Tags:</h3>
+        <div class="row panel-body">
+            <div th:each="tag : ${link.tags}">
+                <span th:text="${tag.tag}"
+                      class="label label-info col-md-1"></span>
+            </div>
+        </div>
+        <br></br>
+    </div>
+
+    <!--<table class="table table-striped">-->
+    <!--<thead>-->
+    <!--<tr>-->
+    <!--<th>Title</th>-->
+    <!--<th>Author</th>-->
+    <!--<th>Date</th>-->
+    <!--</tr>-->
+    <!--</thead>-->
+    <!--<tbody>-->
+    <!--<tr th:each="link : ${links}">-->
+    <!--<td th:text="${link.title}">Title</td>-->
+    <!--<td th:text="${link.user.username}">Author</td>-->
+    <!--<td th:text="${#dates.format(link.createDate, 'dd-MMM-yyyy')}">Date</td>-->
+    <!--</tr>-->
+    <!--</tbody>-->
+    <!--</table>-->
+
+</div>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <div th:replace="fragments/header :: header-css"/>
+</head>
+<body>
+
+<div th:replace="fragments/header :: header"/>
+
+<div class="container">
+
+    <div class="starter-template">
+
+        <h1 class="panel">Recommended tags from other users: </h1>
+        <div class="row panel-body">
+            <div th:each="tag : ${tagsFromOtherUsers}">
+                <a th:href="@{'/link/' + ${link.id} + '/addTag/' + ${tag.tag}}">
+                                    <span th:text="${tag.tag}"
+                                          class="label label-info col-md-1"></span>
+                </a>
+            </div>
+        </div>
+        <h1 class="panel">Recommended tags form text analysis:</h1>
+        <div class="row panel-body">
+            <div th:each="tag : ${tagsFromWebPageAnalysis}">
+                <a th:href="@{'/link/' + ${link.id} + '/addTag/' + ${tag.tag}}">
+                                    <span th:text="${tag.tag}"
+                                          class="label label-info col-md-1"></span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div th:replace="fragments/footer :: footer"/>
+
+</body>
+</html>
