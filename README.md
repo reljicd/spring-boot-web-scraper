@@ -1,8 +1,17 @@
-# Symphony App
+# Spring Boot Web Scrapping App
 
 ## About
 
-This is demo project for Symphony challenge day
+This is a demo project. The idea was to build some basic web scrapping app, using Java 8 lambdas and streams.
+
+It was made using Spring Boot, Spring Security, Thymeleaf, Spring Data JPA, Spring Data REST. Database is in memory H2.
+
+There is a login and registration functionality included.
+
+Users can add web links to their profile and tag them. 
+Links are also suggested based on data scraping of the website on given link.
+
+Note: It is made in less than one day, so some functionalities require some more brushing up.
 
 ## How to run
 
@@ -28,7 +37,7 @@ Admin username: **admin**
 
 Admin password: **admin**
 
-User username: **reljicd**
+User username: **dusan**
 
 User password: **password**
 
