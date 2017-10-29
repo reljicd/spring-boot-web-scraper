@@ -12,6 +12,12 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Predicate;
+
+import static java.util.Comparator.reverseOrder;
+import static java.util.Map.Entry.comparingByValue;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.*;
 
 /**
  * Implementation of {@link TagService}
@@ -43,31 +49,14 @@ public class TagServiceImp implements TagService {
         // Find all Links in data store with same URL
         Collection<Link> linksWithSameUrl = linkRepository.findAllByUrl(link.getUrl());
 
-        Collection<Tag> tags = new HashSet<>();
-        List<Tag> tagsList = new ArrayList<Tag>();
-        for (Link linkWithSameUrl : linksWithSameUrl) {
-            tags.addAll(linkWithSameUrl.getTags());
-            tagsList.addAll(linkWithSameUrl.getTags());
-        }
-        // Remove tags already present
-//        tags.removeAll(link.getTags());
-
-        Map<Tag, Integer> tagsOccurences = new LinkedHashMap<Tag, Integer>();
-        for (Tag s : tagsList) {
-            if (tagsOccurences.get(s) != null) {
-                tagsOccurences.put(s, tagsOccurences.get(s) + 1);
-            } else {
-                tagsOccurences.put(s, 1);
-            }
-        }
-
-        Map<Tag, Integer> sortedTagsOccurences = sortByValue(tagsOccurences);
-
-//        for (Map.Entry<Tag, Integer> tagsEntries : sortedTagsOccurences.entrySet())
-//            System.out.println(tagsEntries.getKey().getTag() + " : " + tagsEntries.getValue());
-
-        return sortedTagsOccurences.keySet();
-//        return tags;
+        return linksWithSameUrl.stream()
+                .map(Link::getTags)
+                .flatMap(Collection::stream)
+                .collect(groupingBy(identity(), counting()))
+                .entrySet().stream()
+                .sorted(comparingByValue(reverseOrder()))
+                .map(Map.Entry::getKey)
+                .collect(toList());
     }
 
     /**
@@ -79,8 +68,8 @@ public class TagServiceImp implements TagService {
     @Override
     public Collection<Tag> getTagsFromWebPageAnalysis(Link link) {
 
-        Map<String, Integer> wordCountMap;
-        Set<String> stopWords = new HashSet<String>(Arrays.asList("a", "about", "above", "after", "again", "against",
+        // Stop words
+        Set<String> stopWords = new HashSet<>(Arrays.asList("a", "about", "above", "after", "again", "against",
                 "all", "am", "an", "and", "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below",
                 "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does",
                 "doesn't", "doing", "don't", "down", "during", "each", "few", "for", "from", "further",
@@ -95,42 +84,34 @@ public class TagServiceImp implements TagService {
                 "where's", "which", "while", "who", "who's", "whom", "why", "why's", "with", "won't", "would",
                 "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"));
 
-        String text = "";
+        String[] scrapedWordsArray = {};
         try {
             Document doc = Jsoup.connect(link.getUrl()).get();
-            text = doc.body().text();
+            scrapedWordsArray = doc.body().text().split(" ");
         } catch (IOException e) {
         }
 
-        wordCountMap = wordCount(text.split(" "));
-
-        Map<String, Integer> sortedWordCountMap = sortByValue(wordCountMap);
-//        System.out.println("Sorted map: " + wordCountMap);
-
-        // Build tags collection
-        Collection<Tag> tagsCollection = new ArrayList<>();
-        for (Map.Entry<String, Integer> sortedWordCountMapEntry : sortedWordCountMap.entrySet()) {
-            // if word is stop word continue
-            if (stopWords.contains(sortedWordCountMapEntry.getKey())) continue;
-
-            Tag tag = new Tag();
-            tag.setTag(sortedWordCountMapEntry.getKey());
-
-            // If there is tag with that content already, use it
-            Tag tagAlreadyExist = tagRepository.findByTag(sortedWordCountMapEntry.getKey());
-            if (tagAlreadyExist != null) tag = tagAlreadyExist;
-
-            // Ignore short words, and words that don't repeat more than 2 times
-            if (sortedWordCountMapEntry.getKey().length() > 3 && sortedWordCountMapEntry.getValue() > 2) {
-                tagsCollection.add(tag);
-//                System.out.println(sortedWordCountMapEntry.getKey() + " : " + sortedWordCountMapEntry.getValue());
-            }
-            // Should put no more that 10 tags
-            if (tagsCollection.size() == 10) break;
-        }
-        // remove tags already on this link
-        tagsCollection.removeAll(link.getTags());
-        return tagsCollection;
+        return Arrays.stream(scrapedWordsArray)
+                // Ignore words in stop words and short words
+                .filter(((Predicate<String>) stopWords::contains).negate().and(s -> s.length() > 3))
+                // Count words by number of occurrences
+                .collect(groupingBy(identity(), counting()))
+                .entrySet().stream()
+                .filter(e -> e.getValue() > 2)
+                .sorted(comparingByValue(reverseOrder()))
+                .map(e -> {
+                    Tag tag = new Tag();
+                    tag.setTag(e.getKey());
+                    // If there is tag with that content already, use it
+                    Tag tagAlreadyExist = tagRepository.findByTag(e.getKey());
+                    if (tagAlreadyExist != null) tag = tagAlreadyExist;
+                    return tag;
+                })
+                // Should put no more that 10 tags
+                .limit(10)
+                // remove tags already on this link
+                .filter(((Predicate<Tag>) link.getTags()::contains).negate())
+                .collect(toList());
     }
 
     /**
@@ -143,62 +124,15 @@ public class TagServiceImp implements TagService {
     @Override
     public Collection<Tag> getTagsFromString(String string) {
         // Parse tags string
-        String[] tagsString = string.split(" ");
-        Collection<Tag> tags = new HashSet<Tag>();
-        for (String tagString : tagsString) {
-            Tag tag = new Tag();
-            tag.setTag(tagString);
-            // If there is tag with that content already in data store, use it
-            Tag tagAlreadyExist = tagRepository.findByTag(tagString);
-            if (tagAlreadyExist != null) tag = tagAlreadyExist;
-            // Add tags to set
-            tags.add(tag);
-        }
-        return tags;
-    }
-
-    /**
-     * Helper method for returning Map of word counts from provided String array
-     *
-     * @param strings
-     * @return
-     */
-    private Map<String, Integer> wordCount(String[] strings) {
-        Map<String, Integer> map = new HashMap<String, Integer>();
-        for (String s : strings) {
-
-            if (!map.containsKey(s)) {  // first time we've seen this string
-                map.put(s, 1);
-            } else {
-                int count = map.get(s);
-                map.put(s, count + 1);
-            }
-        }
-        return map;
-    }
-
-    /**
-     * Helper method for sorting Map by Value
-     *
-     * @param map
-     * @param <K>
-     * @param <V>
-     * @return sorted map
-     */
-    private <K, V extends Comparable<? super V>> Map<K, V>
-    sortByValue(Map<K, V> map) {
-        List<Map.Entry<K, V>> list =
-                new LinkedList<Map.Entry<K, V>>(map.entrySet());
-        Collections.sort(list, new Comparator<Map.Entry<K, V>>() {
-            public int compare(Map.Entry<K, V> o1, Map.Entry<K, V> o2) {
-                return (o2.getValue()).compareTo(o1.getValue());
-            }
-        });
-
-        Map<K, V> result = new LinkedHashMap<K, V>();
-        for (Map.Entry<K, V> entry : list) {
-            result.put(entry.getKey(), entry.getValue());
-        }
-        return result;
+        return Arrays.stream(string.split(" "))
+                .map(s -> {
+                    Tag tag = new Tag();
+                    tag.setTag(s);
+                    // If there is tag with that content already in data store, use it
+                    Tag tagAlreadyExist = tagRepository.findByTag(s);
+                    if (tagAlreadyExist != null) tag = tagAlreadyExist;
+                    return tag;
+                })
+                .collect(toList());
     }
 }
