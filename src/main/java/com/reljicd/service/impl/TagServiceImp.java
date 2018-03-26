@@ -19,30 +19,26 @@ import static java.util.Map.Entry.comparingByValue;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.*;
 
-/**
- * Implementation of {@link TagService}
- *
- * @author Dusan
- */
 @Service
 public class TagServiceImp implements TagService {
 
+    private final TagRepository tagRepository;
+    private final LinkRepository linkRepository;
+
     @Autowired
-    private TagRepository tagRepository;
-    @Autowired
-    private LinkRepository linkRepository;
+    public TagServiceImp(TagRepository tagRepository, LinkRepository linkRepository) {
+        this.tagRepository = tagRepository;
+        this.linkRepository = linkRepository;
+    }
 
     @Override
-    public Tag findByTag(String tag) {
+    public Optional<Tag> findByTag(String tag) {
         return tagRepository.findByTag(tag);
     }
 
     /**
      * Returns collection of {@link Tag}'s for provided link from other user's links with same url
      * Returns them in sorted order according to the number of occurrences
-     *
-     * @param link object
-     * @return
      */
     @Override
     public Collection<Tag> getTagsFromOtherUsersForLink(Link link) {
@@ -61,9 +57,6 @@ public class TagServiceImp implements TagService {
 
     /**
      * Get {@link Tag}s from provided's url web page analysis
-     *
-     * @param link
-     * @return
      */
     @Override
     public Collection<Tag> getTagsFromWebPageAnalysis(Link link) {
@@ -103,8 +96,8 @@ public class TagServiceImp implements TagService {
                     Tag tag = new Tag();
                     tag.setTag(e.getKey());
                     // If there is tag with that content already, use it
-                    Tag tagAlreadyExist = tagRepository.findByTag(e.getKey());
-                    if (tagAlreadyExist != null) tag = tagAlreadyExist;
+                    Optional<Tag> tagAlreadyExist = tagRepository.findByTag(e.getKey());
+                    if (tagAlreadyExist.isPresent()) tag = tagAlreadyExist.get();
                     return tag;
                 })
                 // Should put no more that 10 tags
@@ -117,9 +110,6 @@ public class TagServiceImp implements TagService {
     /**
      * Return collection of {@link Tag}s from provided String
      * If for some word there already exists tag in data store with same string representation, use it
-     *
-     * @param string
-     * @return
      */
     @Override
     public Collection<Tag> getTagsFromString(String string) {
@@ -129,8 +119,8 @@ public class TagServiceImp implements TagService {
                     Tag tag = new Tag();
                     tag.setTag(s);
                     // If there is tag with that content already in data store, use it
-                    Tag tagAlreadyExist = tagRepository.findByTag(s);
-                    if (tagAlreadyExist != null) tag = tagAlreadyExist;
+                    Optional<Tag> tagAlreadyExist = tagRepository.findByTag(s);
+                    if (tagAlreadyExist.isPresent()) tag = tagAlreadyExist.get();
                     return tag;
                 })
                 .collect(toList());

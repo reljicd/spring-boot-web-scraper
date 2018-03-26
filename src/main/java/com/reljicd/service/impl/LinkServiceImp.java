@@ -9,52 +9,26 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-/**
- * Implementation of {@link LinkService}
- *
- * @author Dusan
- */
 @Service
 public class LinkServiceImp implements LinkService {
 
+    private final LinkRepository linkRepository;
+
     @Autowired
-    private LinkRepository linkRepository;
-
-    @Override
-    public Collection<Link> findNLatestLinks(int n) {
-        return nLatestLinks(n, linkRepository.findAll());
+    public LinkServiceImp(LinkRepository linkRepository) {
+        this.linkRepository = linkRepository;
     }
 
     @Override
-    public Collection<Link> findNLatestLinksForUser(int n, User user) {
-//        return nLatestLinks(n, user.getLinks());
-        return null;
-    }
-
-    private Collection<Link> nLatestLinks(int n, Collection<Link> links) {
-        return links
-                .stream()
-                .sorted((a, b) -> b.getCreateDate().compareTo(a.getCreateDate()))
-                .limit(n)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public Link findLinkForId(Long id) {
-        return linkRepository.findOne(id);
+    public Optional<Link> findLinkForId(Long id) {
+        return linkRepository.findById(id);
     }
 
     @Override
     public Link saveLink(Link link) {
         return linkRepository.saveAndFlush(link);
-    }
-
-    @Override
-    public Page<Link> findAllPageable(Pageable pageable) {
-        return linkRepository.findAll(pageable);
     }
 
     @Override
