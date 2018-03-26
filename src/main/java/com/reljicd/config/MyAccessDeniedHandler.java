@@ -1,4 +1,4 @@
-package com.reljicd.error;
+package com.reljicd.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,9 +30,7 @@ public class MyAccessDeniedHandler implements AccessDeniedHandler {
                 = SecurityContextHolder.getContext().getAuthentication();
 
         if (auth != null) {
-            logger.info("User '" + auth.getName()
-                    + "' attempted to access the protected URL: "
-                    + httpServletRequest.getRequestURI());
+            logger.info(String.format("User '%s' attempted to access the protected URL: %s", auth.getName(), httpServletRequest.getRequestURI()));
         }
 
         httpServletResponse.sendRedirect(httpServletRequest.getContextPath() + "/403");

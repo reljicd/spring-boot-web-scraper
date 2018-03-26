@@ -20,7 +20,6 @@ import javax.sql.DataSource;
  *
  * @author Dusan
  */
-//@EnableWebSecurity
 @Configuration
 public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
 
@@ -44,9 +43,8 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
 
     /**
      * HTTPSecurity configurer
-     * - roles ADMIN allow to access /admin/**
-     * - roles USER allow to access /user/** and /newPost/**
-     * - anybody can visit /, /home, /about, /registration, /error, /blog/**, /post/**, /h2-console/**
+     * - roles USER allow to access to /link/** and /newLink/**
+     * - anybody can visit /home, /registration, /error, /links/**, /post/**, /h2-console/**
      * - every other page needs authentication
      * - custom 403 access denied handler
      *
@@ -58,11 +56,8 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
 
         http.csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/", "/home", "/about", "/registration", "/error", "/blog/**", "/post/**", "/h2-console/**").permitAll()
-                .antMatchers("/admin/**").hasAnyRole("ADMIN")
-                .antMatchers("/user/**", "/newPost/**").hasAnyRole("USER")
-                // permit all to see HAL Browser
-//                .antMatchers("/browser/**").permitAll()
+                .antMatchers("/home", "/registration", "/error", "/links/**", "/post/**", "/h2-console/**").permitAll()
+                .antMatchers("link/**", "/newLink/**").hasAnyRole("USER")
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()
@@ -81,9 +76,6 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
 
     /**
      * Authentication details
-     *
-     * @param auth
-     * @throws Exception
      */
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
@@ -98,15 +90,11 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
 
         // In memory authentication
         auth.inMemoryAuthentication()
-//                .withUser("user").password("password").roles("USER")
-//                .and()
                 .withUser(adminUsername).password(adminPassword).roles("ADMIN");
     }
 
     /**
      * Configure and return BCrypt password encoder
-     *
-     * @return
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
