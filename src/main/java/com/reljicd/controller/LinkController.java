@@ -20,97 +20,88 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.security.Principal;
 import java.util.Collection;
+import java.util.Optional;
 
-/**
- * Controller for {@link Link}
- *
- * @author Dusan
- */
 @Controller
 public class LinkController {
 
+    private final TagService tagService;
+    private final LinkService linkService;
+    private final UserService userService;
+
     @Autowired
-    private TagService tagService;
-    @Autowired
-    private LinkService linkService;
-    @Autowired
-    private UserService userService;
+    public LinkController(TagService tagService, LinkService linkService, UserService userService) {
+        this.tagService = tagService;
+        this.linkService = linkService;
+        this.userService = userService;
+    }
 
     /**
      * GET handler for new link form
      * returns LinkDTO in model as a backing bean for form
-     *
-     * @param principal
-     * @return
      */
     @RequestMapping(value = "/newLink", method = RequestMethod.GET)
     public ModelAndView newPost(Principal principal) {
         ModelAndView modelAndView = new ModelAndView();
-        User user = userService.findByUsername(principal.getName());
-        LinkDTO linkDTO = new LinkDTO();
-        modelAndView.addObject("linkDTO", linkDTO);
-        modelAndView.setViewName("/linkForm");
+        Optional<User> user = userService.findByUsername(principal.getName());
+        if (user.isPresent()) {
+            LinkDTO linkDTO = new LinkDTO();
+            modelAndView.addObject("linkDTO", linkDTO);
+            modelAndView.setViewName("/linkForm");
+        } else {
+            modelAndView.setViewName("/error");
+        }
         return modelAndView;
     }
 
-    /**
-     * Handler of new Link form
-     *
-     * @param linkDTO       as a backing bean, should be validated
-     * @param bindingResult
-     * @param principal
-     * @return
-     */
     @RequestMapping(value = "/newLink", method = RequestMethod.POST)
     public ModelAndView createNewPost(@Valid LinkDTO linkDTO, BindingResult bindingResult, Principal principal) {
         ModelAndView modelAndView = new ModelAndView();
-        User user = userService.findByUsername(principal.getName());
-        if (bindingResult.hasErrors()) {
-            modelAndView.setViewName("/linkForm");
+        Optional<User> user = userService.findByUsername(principal.getName());
+        if (user.isPresent()) {
+            if (bindingResult.hasErrors()) {
+                modelAndView.setViewName("/linkForm");
+            } else {
+                // Get collection of tags from string from text box in form
+                Collection<Tag> tags = tagService.getTagsFromString(linkDTO.tags);
+
+                Link link = new Link();
+                link.setUrl(linkDTO.getUrl());
+                link.setUser(user.get());
+                link.setTags(tags);
+                link = linkService.saveLink(link);
+                modelAndView.setViewName("redirect:/link/" + link.getId() + "/recommendTags");
+            }
         } else {
-
-            /**
-             * Get collection of tags from string from text box in form
-             */
-            Collection<Tag> tags = tagService.getTagsFromString(linkDTO.tags);
-
-            Link link = new Link();
-            link.setUrl(linkDTO.getUrl());
-            link.setUser(user);
-            link.setTags(tags);
-            link = linkService.saveLink(link);
-            modelAndView.setViewName("redirect:/link/" + link.getId() + "/recommendTags");
+            modelAndView.setViewName("/error");
         }
         return modelAndView;
     }
 
     /**
-     * Reccomend Tags resource
+     * Recommend Tags resource
      * Not possible to recommend tags if user is not logged in, or if he is now the owner of the link
-     *
-     * @param id        of a {@link Link}
-     * @param principal
-     * @return
      */
     @RequestMapping(value = "/link/{id}/recommendTags", method = RequestMethod.GET)
-    public ModelAndView reccomendTagsToLink(@PathVariable Long id, Principal principal) {
+    public ModelAndView recommendTagsToLink(@PathVariable Long id, Principal principal) {
         ModelAndView modelAndView = new ModelAndView();
-        Link link = linkService.findLinkForId(id);
-        if (link == null) {
-            modelAndView.setViewName("/error");
-        }
-        //  Not possible to recommend tags if user is not logged in, or if he is now the owner of the link
-        else if (principal == null || !principal.getName().equals(link.getUser().getUsername())) {
-            modelAndView.setViewName("/error");
+        Optional<Link> link = linkService.findLinkForId(id);
+        if (link.isPresent()) {
+            //  Not possible to recommend tags if user is not logged in, or if he is now the owner of the link
+            if (principal == null || !principal.getName().equals(link.get().getUser().getUsername())) {
+                modelAndView.setViewName("/403");
+            } else {
+                // Get tags from other users
+                Collection<Tag> tagsFromOtherUsers = tagService.getTagsFromOtherUsersForLink(link.get());
+                // Get tags from web analysis
+                Collection<Tag> tagsFromWebPageAnalysis = tagService.getTagsFromWebPageAnalysis(link.get());
+                modelAndView.addObject("tagsFromOtherUsers", tagsFromOtherUsers);
+                modelAndView.addObject("tagsFromWebPageAnalysis", tagsFromWebPageAnalysis);
+                modelAndView.addObject("link", link.get());
+                modelAndView.setViewName("/recommendTags");
+            }
         } else {
-            // Get tags from other users
-            Collection<Tag> tagsFromOtherUsers = tagService.getTagsFromOtherUsersForLink(link);
-            // Get tags from web analysis
-            Collection<Tag> tagsFromWebPageAnalysis = tagService.getTagsFromWebPageAnalysis(link);
-            modelAndView.addObject("tagsFromOtherUsers", tagsFromOtherUsers);
-            modelAndView.addObject("tagsFromWebPageAnalysis", tagsFromWebPageAnalysis);
-            modelAndView.addObject("link", link);
-            modelAndView.setViewName("/recommendTags");
+            modelAndView.setViewName("/error");
         }
         return modelAndView;
     }
@@ -118,34 +109,30 @@ public class LinkController {
     /**
      * Handler for adding tags to links
      * Not possible to add tag if user is not logged in, or if he is now the owner of the link
-     *
-     * @param linkId    is ID of link
-     * @param tagString string representation of tag
-     * @param principal
-     * @return
      */
     @RequestMapping(value = "/link/{linkId}/addTag/{tagString}", method = RequestMethod.GET)
     public ModelAndView addTagToLink(@PathVariable("linkId") Long linkId, @PathVariable("tagString") String tagString, Principal principal) {
         ModelAndView modelAndView = new ModelAndView();
-        Link link = linkService.findLinkForId(linkId);
-        if (link == null) {
-            modelAndView.setViewName("/error");
-        }
-        // Not possible to add tag if user is not logged in, or if he is now the owner of the link
-        else if (principal == null || !principal.getName().equals(link.getUser().getUsername())) {
-            modelAndView.setViewName("/error");
+        Optional<Link> link = linkService.findLinkForId(linkId);
+        if (link.isPresent()) {
+            // Not possible to add tag if user is not logged in, or if he is now the owner of the link
+            if (principal == null || !principal.getName().equals(link.get().getUser().getUsername())) {
+                modelAndView.setViewName("/403");
+            } else {
+                Tag tag = new Tag();
+                tag.setTag(tagString);
+                // If there is tag with that string already in data store, use it
+                Optional<Tag> tagAlreadyExist = tagService.findByTag(tagString);
+                if (tagAlreadyExist.isPresent()) tag = tagAlreadyExist.get();
+
+                if (!link.get().getTags().contains(tag)) link.get().getTags().add(tag);
+                linkService.saveLink(link.get());
+
+                //redirect back to Recommend Tags page
+                modelAndView.setViewName("redirect:/link/" + link.get().getId() + "/recommendTags");
+            }
         } else {
-            Tag tag = new Tag();
-            tag.setTag(tagString);
-            // If there is tag with that string already in data store, use it
-            Tag tagAlreadyExist = tagService.findByTag(tagString);
-            if (tagAlreadyExist != null) tag = tagAlreadyExist;
-
-            if (!link.getTags().contains(tag)) link.getTags().add(tag);
-            linkService.saveLink(link);
-
-            //redirect back to Recommend Tags page
-            modelAndView.setViewName("redirect:/link/" + link.getId() + "/recommendTags");
+            modelAndView.setViewName("/error");
         }
         return modelAndView;
     }
@@ -154,33 +141,28 @@ public class LinkController {
      * HTTP DELETE method
      * Deletes {@link Link} with provided id
      * Not possible to delete if user is not logged in, or if he is now the owner of the link
-     *
-     * @param id
-     * @param principal
-     * @return
      */
     @RequestMapping(value = "/link/{id}", method = RequestMethod.DELETE)
     public ModelAndView deleteLinkWithId(@PathVariable Long id, Principal principal) {
         ModelAndView modelAndView = new ModelAndView();
-        Link link = linkService.findLinkForId(id);
-        if (link == null) {
-            modelAndView.setViewName("/error");
-        }
-        // Not possible to delete if user is not logged in, or if he is now the owner of the link
-        else if (principal == null || !principal.getName().equals(link.getUser().getUsername())) {
-            modelAndView.setViewName("/error");
+        Optional<Link> link = linkService.findLinkForId(id);
+        if (link.isPresent()) {
+            // Not possible to delete if user is not logged in, or if he is now the owner of the link
+            if (principal == null || !principal.getName().equals(link.get().getUser().getUsername())) {
+                modelAndView.setViewName("/403");
+            } else {
+                linkService.delete(link.get());
+                modelAndView.setViewName("redirect:/home");
+            }
         } else {
-            linkService.delete(link);
-            modelAndView.setViewName("redirect:/home");
+            modelAndView.setViewName("/error");
         }
         return modelAndView;
     }
 
     /**
      * Link Data Transfer Object
-     * For transfering string of tags from textbox
-     *
-     * @author Dusan
+     * For transferring string of tags from textbox
      */
     public static class LinkDTO {
 
