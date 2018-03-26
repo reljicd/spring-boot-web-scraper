@@ -1,29 +1,29 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <div th:replace="fragments/header :: header-css"/>
+    <div th:replace="/fragments/header :: header-css"/>
 </head>
 <body>
 
-<div th:replace="fragments/header :: header"/>
+<div th:replace="/fragments/header :: header"/>
 
 <div class="container">
 
     <div class="jumbotron">
-        <h1 th:text="${user.name} + '\'s Links'">Username Blog</h1>
+        <h1 th:text="${user.name} + '\'s Links'"></h1>
     </div>
 
     <br></br>
     <br></br>
 
-    <div th:replace="fragments/links :: links"/>
+    <div th:replace="/fragments/links :: links"/>
 
-    <div th:replace="fragments/pagination :: pagination(URLparameter='/links/' + ${user.username})"/>
+    <div th:replace="/fragments/pagination :: pagination(URLparameter='/links/' + ${user.username})"/>
 
 </div>
 <!-- /.container -->
 
-<div th:replace="fragments/footer :: footer"/>
+<div th:replace="/fragments/footer :: footer"/>
 
 </body>
 </html>

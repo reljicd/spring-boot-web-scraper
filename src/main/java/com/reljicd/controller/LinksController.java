@@ -51,7 +51,7 @@ public class LinksController {
         ModelAndView modelAndView = new ModelAndView();
         User user = userService.findByUsername(username);
         if (user == null) {
-            modelAndView.setViewName("404");
+            modelAndView.setViewName("/error");
         } else {
             Page<Link> links = linkService.findByUserOrderedByDatePageable(user, new PageRequest(evalPage, evalPageSize));
             Pager pager = new Pager(links.getTotalPages(), links.getNumber(), BUTTONS_TO_SHOW);
@@ -62,7 +62,7 @@ public class LinksController {
             modelAndView.addObject("pageSizes", PAGE_SIZES);
             modelAndView.addObject("pager", pager);
             modelAndView.addObject("user", user);
-            modelAndView.setViewName("links");
+            modelAndView.setViewName("/links");
         }
         return modelAndView;
     }

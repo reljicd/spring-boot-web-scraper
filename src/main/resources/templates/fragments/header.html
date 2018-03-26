@@ -5,7 +5,7 @@
         <!--&lt;!&ndash; this is header-css &ndash;&gt;-->
         <!--<link rel="stylesheet" type="text/css"-->
         <!--href="webjars/bootstrap/3.3.7/css/bootstrap.min.css" />-->
-        <title>Spring Boot Blog</title>
+        <title>Spring Boot Web Scraper</title>
 
         <link href="http://cdn.jsdelivr.net/webjars/bootstrap/3.3.4/css/bootstrap.min.css"
               th:href="@{/webjars/bootstrap/3.3.7/css/bootstrap.min.css}"
@@ -38,7 +38,7 @@
                 <ul class="nav navbar-nav" sec:authorize="!isAuthenticated()">
                     <li class="active"><a th:href="@{/login}">Login</a></li>
                 </ul>
-                <!-- show My Blog only if user is authenticated -->
+                <!-- show My Web Scraper only if user is authenticated -->
                 <ul class="nav navbar-nav" sec:authorize="hasRole('USER')">
                     <li class="active"><a th:href="@{'/links/' + ${#authentication.getName()}}">My Links</a></li>
                 </ul>

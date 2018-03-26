@@ -49,7 +49,7 @@ public class LinkController {
         User user = userService.findByUsername(principal.getName());
         LinkDTO linkDTO = new LinkDTO();
         modelAndView.addObject("linkDTO", linkDTO);
-        modelAndView.setViewName("linkForm");
+        modelAndView.setViewName("/linkForm");
         return modelAndView;
     }
 
@@ -66,7 +66,7 @@ public class LinkController {
         ModelAndView modelAndView = new ModelAndView();
         User user = userService.findByUsername(principal.getName());
         if (bindingResult.hasErrors()) {
-            modelAndView.setViewName("linkForm");
+            modelAndView.setViewName("/linkForm");
         } else {
 
             /**
@@ -97,11 +97,11 @@ public class LinkController {
         ModelAndView modelAndView = new ModelAndView();
         Link link = linkService.findLinkForId(id);
         if (link == null) {
-            modelAndView.setViewName("error");
+            modelAndView.setViewName("/error");
         }
         //  Not possible to recommend tags if user is not logged in, or if he is now the owner of the link
         else if (principal == null || !principal.getName().equals(link.getUser().getUsername())) {
-            modelAndView.setViewName("403");
+            modelAndView.setViewName("/error");
         } else {
             // Get tags from other users
             Collection<Tag> tagsFromOtherUsers = tagService.getTagsFromOtherUsersForLink(link);
@@ -110,7 +110,7 @@ public class LinkController {
             modelAndView.addObject("tagsFromOtherUsers", tagsFromOtherUsers);
             modelAndView.addObject("tagsFromWebPageAnalysis", tagsFromWebPageAnalysis);
             modelAndView.addObject("link", link);
-            modelAndView.setViewName("recommendTags");
+            modelAndView.setViewName("/recommendTags");
         }
         return modelAndView;
     }
@@ -129,11 +129,11 @@ public class LinkController {
         ModelAndView modelAndView = new ModelAndView();
         Link link = linkService.findLinkForId(linkId);
         if (link == null) {
-            modelAndView.setViewName("error");
+            modelAndView.setViewName("/error");
         }
         // Not possible to add tag if user is not logged in, or if he is now the owner of the link
         else if (principal == null || !principal.getName().equals(link.getUser().getUsername())) {
-            modelAndView.setViewName("403");
+            modelAndView.setViewName("/error");
         } else {
             Tag tag = new Tag();
             tag.setTag(tagString);
@@ -164,11 +164,11 @@ public class LinkController {
         ModelAndView modelAndView = new ModelAndView();
         Link link = linkService.findLinkForId(id);
         if (link == null) {
-            modelAndView.setViewName("error");
+            modelAndView.setViewName("/error");
         }
         // Not possible to delete if user is not logged in, or if he is now the owner of the link
         else if (principal == null || !principal.getName().equals(link.getUser().getUsername())) {
-            modelAndView.setViewName("403");
+            modelAndView.setViewName("/error");
         } else {
             linkService.delete(link);
             modelAndView.setViewName("redirect:/home");
