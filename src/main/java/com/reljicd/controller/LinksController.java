@@ -17,52 +17,43 @@ import org.springframework.web.servlet.ModelAndView;
 
 import java.util.Optional;
 
-/**
- * Controller for showing user page with users made links, including pagination
- *
- * @author Dusan
- */
 @Controller
 public class LinksController {
 
-    private static final int BUTTONS_TO_SHOW = 5;
     private static final int INITIAL_PAGE = 0;
-    private static final int INITIAL_PAGE_SIZE = 5;
-    private static final int[] PAGE_SIZES = {5, 10, 20};
+
+    private final UserService userService;
+
+    private final LinkService linkService;
 
     @Autowired
-    private UserService userService;
-
-    @Autowired
-    private LinkService linkService;
+    public LinksController(UserService userService, LinkService linkService) {
+        this.userService = userService;
+        this.linkService = linkService;
+    }
 
     @RequestMapping(value = "/links/{username}", method = RequestMethod.GET)
     public ModelAndView blogForUsername(@PathVariable String username,
-                                        @RequestParam("pageSize") Optional<Integer> pageSize,
                                         @RequestParam("page") Optional<Integer> page) {
-        // Evaluate page size. If requested parameter is null, return initial
-        // page size
-        int evalPageSize = pageSize.orElse(INITIAL_PAGE_SIZE);
+
         // Evaluate page. If requested parameter is null or less than 0 (to
         // prevent exception), return initial size. Otherwise, return value of
         // param. decreased by 1.
         int evalPage = (page.orElse(0) < 1) ? INITIAL_PAGE : page.get() - 1;
 
         ModelAndView modelAndView = new ModelAndView();
-        User user = userService.findByUsername(username);
-        if (user == null) {
-            modelAndView.setViewName("/error");
-        } else {
-            Page<Link> links = linkService.findByUserOrderedByDatePageable(user, new PageRequest(evalPage, evalPageSize));
-            Pager pager = new Pager(links.getTotalPages(), links.getNumber(), BUTTONS_TO_SHOW);
+        Optional<User> user = userService.findByUsername(username);
+        if (user.isPresent()) {
+            Page<Link> links = linkService.findByUserOrderedByDatePageable(user.get(), new PageRequest(evalPage, 5));
+            Pager pager = new Pager(links);
 
-//            modelAndView.addObject("links", linkService.findNLatestLinksForUser(10, user));
             modelAndView.addObject("links", links);
-            modelAndView.addObject("selectedPageSize", evalPageSize);
-            modelAndView.addObject("pageSizes", PAGE_SIZES);
             modelAndView.addObject("pager", pager);
-            modelAndView.addObject("user", user);
+            modelAndView.addObject("user", user.get());
             modelAndView.setViewName("/links");
+
+        } else {
+            modelAndView.setViewName("/error");
         }
         return modelAndView;
     }

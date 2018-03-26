@@ -13,50 +13,31 @@ import org.springframework.web.servlet.ModelAndView;
 
 import java.util.Optional;
 
-/**
- * Controller for home page, including support for pagination
- *
- * @author Dusan
- */
 @Controller
 public class HomeController {
 
-    private static final int BUTTONS_TO_SHOW = 5;
     private static final int INITIAL_PAGE = 0;
-    private static final int INITIAL_PAGE_SIZE = 5;
-    private static final int[] PAGE_SIZES = {5, 10, 20};
+
+    private final LinkService linkService;
 
     @Autowired
-    private LinkService linkService;
+    public HomeController(LinkService linkService) {
+        this.linkService = linkService;
+    }
 
-    /**
-     * Return all links from all users and show them
-     *
-     * @param pageSize
-     * @param page
-     * @return
-     */
     @GetMapping("/home")
-    public ModelAndView home(@RequestParam("pageSize") Optional<Integer> pageSize,
-                             @RequestParam("page") Optional<Integer> page) {
+    public ModelAndView home(@RequestParam("page") Optional<Integer> page) {
 
-        // Evaluate page size. If requested parameter is null, return initial
-        // page size
-        int evalPageSize = pageSize.orElse(INITIAL_PAGE_SIZE);
         // Evaluate page. If requested parameter is null or less than 0 (to
         // prevent exception), return initial size. Otherwise, return value of
         // param. decreased by 1.
         int evalPage = (page.orElse(0) < 1) ? INITIAL_PAGE : page.get() - 1;
 
-//        Page<Link> links = linkService.findAllPageable(new PageRequest(evalPage, evalPageSize));
-        Page<Link> links = linkService.findAllOrderedByDatePageable(new PageRequest(evalPage, evalPageSize));
-        Pager pager = new Pager(links.getTotalPages(), links.getNumber(), BUTTONS_TO_SHOW);
+        Page<Link> links = linkService.findAllOrderedByDatePageable(new PageRequest(evalPage, 5));
+        Pager pager = new Pager(links);
 
         ModelAndView modelAndView = new ModelAndView();
-//        Collection<Link> links = linkService.findNLatestLinks(5);
         modelAndView.addObject("links", links);
-        modelAndView.addObject("selectedPageSize", evalPageSize);
-        modelAndView.addObject("pageSizes", PAGE_SIZES);
         modelAndView.addObject("pager", pager);
         modelAndView.setViewName("/home");
         return modelAndView;
