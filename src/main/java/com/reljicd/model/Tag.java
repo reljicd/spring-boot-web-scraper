@@ -3,20 +3,21 @@ package com.reljicd.model;
 import javax.persistence.*;
 import java.util.Collection;
 
-/**
- * @author Dusan
- */
 @Entity
 @Table(name = "tag")
 public class Tag {
 
-    private Long id;
-    private String tag;
-    private Collection<Link> links;
-
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "tag_id")
+    private Long id;
+
+    @Column(name = "tag", unique = true)
+    private String tag;
+
+    @ManyToMany(cascade = CascadeType.ALL, mappedBy = "tags")
+    private Collection<Link> links;
+
     public Long getId() {
         return id;
     }
@@ -25,7 +26,6 @@ public class Tag {
         this.id = id;
     }
 
-    @Column(name = "tag", unique = true)
     public String getTag() {
         return tag;
     }
@@ -34,7 +34,6 @@ public class Tag {
         this.tag = tag;
     }
 
-    @ManyToMany(cascade = CascadeType.ALL, mappedBy = "tags")
     public Collection<Link> getLinks() {
         return links;
     }
