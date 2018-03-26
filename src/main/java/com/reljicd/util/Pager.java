@@ -1,78 +1,45 @@
 package com.reljicd.util;
 
+import com.reljicd.model.Link;
+import org.springframework.data.domain.Page;
+
 /**
- * Used to calculate span of buttons which will be displayed on a page
- *
  * @author Dusan Raljic
  */
 public class Pager {
 
-    private int buttonsToShow = 5;
+    private final Page<Link> links;
 
-    private int startPage;
-
-    private int endPage;
-
-    public Pager(int totalPages, int currentPage, int buttonsToShow) {
-
-        setButtonsToShow(buttonsToShow);
-
-        int halfPagesToShow = getButtonsToShow() / 2;
-
-        if (totalPages <= getButtonsToShow()) {
-            setStartPage(1);
-            setEndPage(totalPages);
-
-        } else if (currentPage - halfPagesToShow <= 0) {
-            setStartPage(1);
-            setEndPage(getButtonsToShow());
-
-        } else if (currentPage + halfPagesToShow == totalPages) {
-            setStartPage(currentPage - halfPagesToShow);
-            setEndPage(totalPages);
-
-        } else if (currentPage + halfPagesToShow > totalPages) {
-            setStartPage(totalPages - getButtonsToShow() + 1);
-            setEndPage(totalPages);
-
-        } else {
-            setStartPage(currentPage - halfPagesToShow);
-            setEndPage(currentPage + halfPagesToShow);
-        }
-
+    public Pager(Page<Link> links) {
+        this.links = links;
     }
 
-    public int getButtonsToShow() {
-        return buttonsToShow;
+    public int getPageIndex() {
+        return links.getNumber() + 1;
     }
 
-    public void setButtonsToShow(int buttonsToShow) {
-        if (buttonsToShow % 2 != 0) {
-            this.buttonsToShow = buttonsToShow;
-        } else {
-            throw new IllegalArgumentException("Must be an odd value!");
-        }
+    public int getPageSize() {
+        return links.getSize();
     }
 
-    public int getStartPage() {
-        return startPage;
+    public boolean hasNext() {
+        return links.hasNext();
     }
 
-    public void setStartPage(int startPage) {
-        this.startPage = startPage;
+    public boolean hasPrevious() {
+        return links.hasPrevious();
     }
 
-    public int getEndPage() {
-        return endPage;
+    public int getTotalPages() {
+        return links.getTotalPages();
     }
 
-    public void setEndPage(int endPage) {
-        this.endPage = endPage;
+    public long getTotalElements() {
+        return links.getTotalElements();
     }
 
-    @Override
-    public String toString() {
-        return "Pager [startPage=" + startPage + ", endPage=" + endPage + "]";
+    public boolean indexOutOfBounds() {
+        return this.getPageIndex() < 0 || this.getPageIndex() > this.getTotalElements();
     }
 
 }

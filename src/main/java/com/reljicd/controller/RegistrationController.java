@@ -11,22 +11,16 @@ import org.springframework.web.servlet.ModelAndView;
 
 import javax.validation.Valid;
 
-/**
- * Registration Controller
- *
- * @author Dusan
- */
 @Controller
 public class RegistrationController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
-    /**
-     * Return registration form
-     *
-     * @return
-     */
+    @Autowired
+    public RegistrationController(UserService userService) {
+        this.userService = userService;
+    }
+
     @RequestMapping(value = "/registration", method = RequestMethod.GET)
     public ModelAndView registration() {
         ModelAndView modelAndView = new ModelAndView();
@@ -36,29 +30,22 @@ public class RegistrationController {
         return modelAndView;
     }
 
-    /**
-     * Registration form handler
-     * Reject if there is already user with entered username, or email present
-     *
-     * @param user
-     * @param bindingResult
-     * @return
-     */
     @RequestMapping(value = "/registration", method = RequestMethod.POST)
     public ModelAndView createNewUser(@Valid User user, BindingResult bindingResult) {
-        ModelAndView modelAndView = new ModelAndView();
-        User userWithEnteredEmailExists = userService.findByEmail(user.getEmail());
-        if (userWithEnteredEmailExists != null) {
+
+        if (userService.findByEmail(user.getEmail()).isPresent()) {
             bindingResult
                     .rejectValue("email", "error.user",
                             "There is already a user registered with the email provided");
         }
-        User userWithEnteredUsernameExists = userService.findByUsername(user.getUsername());
-        if (userWithEnteredUsernameExists != null) {
+        if (userService.findByUsername(user.getUsername()).isPresent()) {
             bindingResult
                     .rejectValue("username", "error.user",
                             "There is already a user registered with the username provided");
         }
+
+        ModelAndView modelAndView = new ModelAndView();
+
         if (bindingResult.hasErrors()) {
             modelAndView.setViewName("/registration");
         } else {
